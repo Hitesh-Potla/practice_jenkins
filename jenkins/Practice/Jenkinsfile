@@ -1,32 +1,31 @@
 pipeline {
-    agent any
-
+    agent any  // Use any available agent/node
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                git 'https://github.com/your-username/your-repo.git'
+                // Clone the repository
+                git url: 'https://github.com/your-username/your-repo.git', branch: 'main'
             }
         }
-
         stage('Install Dependencies') {
             steps {
+                // Install Python dependencies
                 sh 'pip install -r requirements.txt'
             }
         }
-
         stage('Run Tests') {
             steps {
+                // Run unit tests with pytest
                 sh 'pytest'
             }
         }
-
-        stage('Build and Train Model') {
+        stage('Run Model') {
             steps {
+                // Run the Python script
                 sh 'python src/main.py'
             }
         }
     }
-
     post {
         success {
             echo 'Pipeline succeeded!'
