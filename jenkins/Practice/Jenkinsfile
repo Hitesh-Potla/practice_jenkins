@@ -1,27 +1,23 @@
 pipeline {
-    agent any  // Use any available agent/node
+    agent any
     stages {
         stage('Checkout') {
             steps {
-                // Clone the repository
-                git url: 'https://github.com/your-username/your-repo.git', branch: 'main'
+                git credentialsId: 'github-pat', url: 'https://github.com/Hitesh-Potla/practice_jenkins.git', branch: 'main'
             }
         }
         stage('Install Dependencies') {
             steps {
-                // Install Python dependencies
                 sh 'pip install -r requirements.txt'
             }
         }
         stage('Run Tests') {
             steps {
-                // Run unit tests with pytest
                 sh 'pytest'
             }
         }
         stage('Run Model') {
             steps {
-                // Run the Python script
                 sh 'python src/main.py'
             }
         }
