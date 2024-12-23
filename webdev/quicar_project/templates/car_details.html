@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Car Details</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-900 text-white">
+    <!-- Container -->
+    <div class="max-w-6xl mx-auto bg-gray-800 shadow-lg rounded-lg mt-10 p-6">
+      <!-- Car Image and Basic Info -->
+      <div class="flex flex-col md:flex-row">
+        <!-- Car Image -->
+        <div class="md:w-1/2">
+          <img
+            alt="{{ car.name }}"
+            class="w-full rounded-lg mb-4"
+            src="{{ car.image.url }}"
+          />
+        </div>
+        <!-- Car Info -->
+        <div class="md:w-1/2 mt-4 md:mt-0 md:pl-6">
+          <h1 class="text-3xl font-bold text-gray-100">{{ car.name }}</h1>
+          <p class="text-lg text-gray-100 mt-2">{{ car.description }}</p>
+          <div class="mt-4">
+            <span class="text-2xl font-semibold text-green-600">
+              &#x20b9; {{ car.price }}
+            </span>
+            <span class="text-gray-100">/day</span>
+          </div>
+          <p class="mt-3 text-gray-100">
+            Year: <span class="font-semibold">{{ car.year }}</span>
+          </p>
+          <p class="mt-1 text-gray-100">
+            Type: <span class="font-semibold">{{ car.car_type }}</span>
+          </p>
+          <p class="mt-1 text-gray-100">
+            Engine: <span class="font-semibold">{{ car.engine }}</span>
+          </p>
+          <p class="mt-1 text-gray-100">
+            Location: <span class="font-semibold">{{ car.location }}</span>
+          </p>
+          <!-- Availability -->
+          {% if car.availability_status %}
+          <span
+            class="inline-block mt-3 bg-green-100 text-green-600 text-sm px-3 py-1 rounded-full"
+            >Available for Rent</span
+          >
+          {% else %}
+          <span
+            class="inline-block mt-3 bg-red-100 text-red-600 text-sm px-3 py-1 rounded-full"
+            >Currently Unavailable</span
+          >
+          {% endif %}
+          <!-- Rent Button -->
+          <button
+            id="rent-now-button"
+            class="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow"
+            data-car-id="{{ car.car_id }}"
+            data-rental-rate="{{ car.rental_rate }}"
+            data-rental-duration="{{ car.rental_duration }}"
+          >
+            Rent Now
+          </button>
+        </div>
+      </div>
+
+      <!-- Additional Details -->
+      <div class="mt-10">
+        <h2 class="text-2xl font-bold text-gray-100">Car Specifications</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+          <!-- Card 1 -->
+          <div class="bg-gray-100 p-4 rounded-lg">
+            <h3 class="text-gray-700 font-semibold">Rental Rate</h3>
+            <p class="text-gray-800 font-bold">
+              &#x20b9; {{ car.rental_rate }} / day
+            </p>
+          </div>
+          <!-- Card 2 -->
+          <div class="bg-gray-100 p-4 rounded-lg">
+            <h3 class="text-gray-700 font-semibold">Rental Duration</h3>
+            <p class="text-gray-800 font-bold">
+              {{ car.rental_duration }} days
+            </p>
+          </div>
+          <!-- Card 3 -->
+          <div class="bg-gray-100 p-4 rounded-lg">
+            <h3 class="text-gray-700 font-semibold">Car ID</h3>
+            <p class="text-gray-800 font-bold">{{ car.car_id }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Razorpay Integration -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+      document.getElementById("rent-now-button").addEventListener("click", async function () {
+        const carId = this.dataset.carId;
+        const rentalRate = parseFloat(this.dataset.rentalRate);  // Rental rate from button data attribute
+        const rentalDuration = parseInt(this.dataset.rentalDuration);  // Rental duration from button data attribute
+        const amount = rentalRate * rentalDuration;  // Calculate the total amount dynamically
+
+        console.log("Rent Now button clicked!"); // Debug: Button click triggered
+        console.log("Car ID:", carId); // Debug: Check if carId is correctly fetched
+        console.log("Rental Rate:", rentalRate); // Debug: Check rental rate
+        console.log("Rental Duration:", rentalDuration); // Debug: Check rental duration
+        console.log("Total Amount:", amount); // Debug: Check calculated amount
+
+        try {
+          // Step 1: Send a POST request to create the Razorpay order
+          const response = await fetch(`/manage_cars/create_order/${carId}/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ amount: amount }),
+          });
+
+          console.log("Fetch response:", response); // Debug: Log the response object
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log("Response data:", data); // Debug: Log the JSON response
+
+          if (data.error) {
+            alert("Server error: " + data.error);
+            return;
+          }
+
+          // Step 2: Initialize Razorpay payment modal
+          const options = {
+            key: data.key_id, // Razorpay Key ID
+            amount: data.amount * 100, // Amount in paise
+            currency: data.currency,
+            name: "Quicar Project",
+            description: "Car Rental Payment",
+            order_id: data.order_id,
+            handler: function (response) {
+              console.log("Payment successful:", response); // Debug: Log payment response
+              alert("Payment successful! Payment ID: " + response.razorpay_payment_id);
+            },
+            prefill: {
+              name: "hitesh", // Pre-fill customer's name
+              email: "hitesh@gmail.com", // Pre-fill customer's email
+              contact: "9999999999", // Pre-fill customer's phone
+            },
+            theme: {
+              color: "#3399cc",
+            },
+          };
+
+          console.log("Razorpay options initialized:", options); // Debug: Log Razorpay options
+
+          const rzp = new Razorpay(options);
+          rzp.open();
+        } catch (error) {
+          console.error("Error occurred:", error); // Debug: Log errors
+          alert("An error occurred: " + error.message);
+        }
+      });
+    </script>
+  </body>
+</html>
